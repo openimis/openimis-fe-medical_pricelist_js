@@ -1,4 +1,6 @@
 {
-    "medical_pricelist.table.medicalItemName": "Nom du produit", 
-    "medical_pricelist.table.medicalServiceName": "Nom du service"    
+  "medical_pricelist.table.medicalItemName": "Nom du produit",
+  "medical_pricelist.table.medicalServiceName": "Nom du service",
+  "medical_pricelist.table.price": "Prix de base",
+  "medical_pricelist.table.overrule": "Prix sur la liste"
 }

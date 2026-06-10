@@ -3,9 +3,8 @@ import React, { useCallback, useState } from "react";
 import { Tooltip, Button } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { GetIconComponent } from "@openimis/fe-core";
-const TabIcon = GetIconComponent("Tab")
-const DeleteIcon = GetIconComponent("Delete")
-
+const TabIcon = GetIconComponent("Tab");
+const DeleteIcon = GetIconComponent("Delete");
 
 import { combine, useTranslations, ConfirmDialog, Searcher, withModulesManager } from "@openimis/fe-core";
 import PricelistsFilters from "./PricelistsFilters";
@@ -17,8 +16,8 @@ const formatLocation = (location) => {
   return location ? `${location.code} - ${location.name}` : "";
 };
 
-const StyledPricelistsSearcher = styled('div')(({ theme }) => ({
-  '& .horizontalButtonContainer': theme.buttonContainer?.horizontal ?? {},
+const StyledPricelistsSearcher = styled("div")(({ theme }) => ({
+  "& .horizontalButtonContainer": theme.buttonContainer?.horizontal ?? {},
 }));
 
 const PricelistsSearcher = (props) => {
@@ -87,7 +86,7 @@ const PricelistsSearcher = (props) => {
       ),
     ];
   }, []);
-  
+
   const filtersToQueryParams = useCallback((state) => {
     const params = Object.keys(state.filters)
       .filter((contrib) => !!state.filters[contrib].filter)

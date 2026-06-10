@@ -21,8 +21,8 @@
   "medical_pricelist.pricelistForm.table.title": "Details",
   "medical_pricelist.pricelistForm.emptyTitle": "New Pricelist",
   "medical_pricelist.table.code": "Code",
-  "medical_pricelist.table.overrule": "Price",
-  "medical_pricelist.table.price": "Price",
+  "medical_pricelist.table.overrule": "List Price",
+  "medical_pricelist.table.price": "Base Price",
   "medical_pricelist.table.name": "Name",
   "medical_pricelist.table.type": "Type",
   "medical_pricelist.table.type.c": "Curative",
@@ -51,7 +51,6 @@
   "medical_pricelist.gql_mutation_pricelists_medical_services_update_perms": "Medical Pricelist | Mutation Pricelists Medical Services Update",
   "medical_pricelist.gql_mutation_pricelists_medical_services_delete_perms": "Medical Pricelist | Mutation Pricelists Medical Services Delete",
   "medical_pricelist.gql_mutation_pricelists_medical_services_duplicate_perms": "Medical Pricelist | Mutation Pricelists Medical Services Duplicate",
-  "medical_pricelist.table.medicalItemName": "Product Name", 
-  "medical_pricelist.table.medicalServiceName": "Service Name"    
-
+  "medical_pricelist.table.medicalItemName": "Product Name",
+  "medical_pricelist.table.medicalServiceName": "Service Name"
 }

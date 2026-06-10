@@ -1,35 +1,42 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { styled } from "@mui/material/styles";
 import { Table, withModulesManager, combine, useTranslations, ErrorBoundary } from "@openimis/fe-core";
-import { Paper, Grid, Typography, Checkbox, Button} from "@mui/material";
+import { Paper, Grid, Typography, Checkbox, Button } from "@mui/material";
 import PriceOverruleDialog from "./PriceOverruleDialog";
-import SelectAllButton from "./PricelistSelectAllButton" 
+import SelectAllButton from "./PricelistSelectAllButton";
+import { isItemActive } from "../helpers/selection";
 
-const StyledPricelistDetailsPanel = styled('div')(({ theme }) => ({
-  '& .paper': theme.paper?.paper ?? {},
-  '& .item': theme.paper?.item ?? {},
-  '& .tableTitle': theme.table?.title ?? {},
-  '& .checkbox': {
+const StyledPricelistDetailsPanel = styled("div")(({ theme }) => ({
+  "& .paper": theme.paper?.paper ?? {},
+  "& .item": theme.paper?.item ?? {},
+  "& .tableTitle": theme.table?.title ?? {},
+  "& .table": {
+    tableLayout: "fixed",
+    width: "100%",
+  },
+  "& .table .MuiTableCell-root": {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  "& .table .MuiTableCell-root:nth-of-type(1)": {
+    width: "6rem",
+  },
+  "& .checkbox": {
     padding: theme.spacing(0),
   },
-  '& .editDetailBtn': {
+  "& .selectAllBtn": {
+    minWidth: "4.5rem",
+  },
+  "& .editDetailBtn": {
     padding: 0,
+    minWidth: "auto",
+  },
+  "& .editDetailCell": {
+    width: "4rem",
+    textAlign: "right",
   },
 }));
-
-const HEADERS = [
-  "",
-  "medical_pricelist.table.code",
-  "medical_pricelist.table.name",
-  "medical_pricelist.table.type",
-  "medical_pricelist.table.price",
-  "medical_pricelist.table.overrule",
-  "",
-];
-
-const isItemActive = (edited, item) => {
-  return edited.addedDetails?.includes(item.uuid) || (item.isActive && !edited.removedDetails?.includes(item.uuid));
-};
 
 const PricelistDetailsPanel = (props) => {
   const {
@@ -41,16 +48,46 @@ const PricelistDetailsPanel = (props) => {
     details,
     fetchDetails,
     onEditedChanged,
+    detailsRefreshKey = 0,
   } = props;
-  const { formatMessage } = useTranslations("medical_pricelist", modulesManager);
+  const { formatMessage, formatAmount } = useTranslations("medical_pricelist", modulesManager);
+
+  const formatPrice = (price) => (price != null && price !== "" ? formatAmount(price) : "");
+
+  const getListPrice = (item) => {
+    if (edited.priceOverrules && item.uuid in edited.priceOverrules) {
+      return edited.priceOverrules[item.uuid];
+    }
+    return item.priceOverrule;
+  };
   const [pagination, setPagination] = useState({ page: 0, afterCursor: null, beforeCursor: null });
   const [editedDetail, setEditedDetail] = useState(null);
-  
-  const ButtonHeader = (_) => {
-    return SelectAllButton(details, props, edited, onEditedChanged, edited)
-  }
 
-  HEADERS[0] = ButtonHeader
+  const renderSelectAllHeader = useCallback(
+    () => (
+      <SelectAllButton
+        details={details}
+        readOnly={readOnly}
+        edited={edited}
+        onEditedChanged={onEditedChanged}
+        modulesManager={modulesManager}
+      />
+    ),
+    [details, readOnly, edited, onEditedChanged, modulesManager]
+  );
+
+  const headers = useMemo(
+    () => [
+      renderSelectAllHeader,
+      "medical_pricelist.table.code",
+      "medical_pricelist.table.name",
+      "medical_pricelist.table.type",
+      "medical_pricelist.table.price",
+      "medical_pricelist.table.overrule",
+      "",
+    ],
+    [renderSelectAllHeader]
+  );
 
   useEffect(() => {
     const filters = [];
@@ -63,7 +100,7 @@ const PricelistDetailsPanel = (props) => {
     }
 
     fetchDetails(filters);
-  }, [pagination.page, edited_id]);
+  }, [pagination.page, edited_id, detailsRefreshKey]);
 
   const onDetailChange = (event, item) => {
     if (event.target.checked) {
@@ -71,12 +108,12 @@ const PricelistDetailsPanel = (props) => {
         ...edited,
         // It's useless to add the to the list of added items if it is already marked as active
         addedDetails: !item.isActive ? (edited.addedDetails ?? []).concat(item.uuid) : edited.addedDetails,
-        removedDetails: edited.removedDetails && edited.removedDetails.filter((x) => x !== item.uuid),
+        removedDetails: (edited.removedDetails ?? []).filter((x) => x !== item.uuid),
       });
     } else {
       onEditedChanged({
         ...edited,
-        addedDetails: edited.addedDetails && edited.addedDetails.filter((x) => x !== item.uuid),
+        addedDetails: (edited.addedDetails ?? []).filter((x) => x !== item.uuid),
         removedDetails: item.isActive ? (edited.removedDetails ?? []).concat([item.uuid]) : edited.removedDetails,
       });
     }
@@ -122,7 +159,7 @@ const PricelistDetailsPanel = (props) => {
               <Table
                 error={details.error}
                 fetching={details.isFetching}
-                headers={HEADERS}
+                headers={headers}
                 itemFormatters={[
                   (s) => (
                     <Checkbox
@@ -136,23 +173,25 @@ const PricelistDetailsPanel = (props) => {
                   (s) => s.code,
                   (s) => s.name,
                   (s) => formatMessage(`medical_pricelist.table.type.${s.type.toLowerCase()}`),
-                  (s) => s.price,
-                  (s) => s.priceOverrule,
-                  (s) =>
-                    isItemActive(edited, s) &&
-                    !readOnly && (
-                      <Button
-                        size="small"
-                        variant="text"
-                        color="primary"
-                        className="editDetailBtn"
-                        onClick={() => setEditedDetail(s)}
-                      >
-                        {formatMessage("medical_pricelist.table.editOverruleButton")}
-                      </Button>
-                    ),
+                  (s) => formatPrice(s.price),
+                  (s) => formatPrice(getListPrice(s)),
+                  (s) => (
+                    <span className="editDetailCell">
+                      {isItemActive(edited, s) && !readOnly && (
+                        <Button
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          className="editDetailBtn"
+                          onClick={() => setEditedDetail(s)}
+                        >
+                          {formatMessage("medical_pricelist.table.editOverruleButton")}
+                        </Button>
+                      )}
+                    </span>
+                  ),
                 ]}
-                aligns={HEADERS.map((_, i) => (i === HEADERS.length - 1 ? "right" : null))}
+                aligns={headers.map((_, i) => (i >= headers.length - 3 ? "right" : null))}
                 items={details.items}
                 withPagination
                 page={pagination.page}

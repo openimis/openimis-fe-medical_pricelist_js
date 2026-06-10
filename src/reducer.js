@@ -1,5 +1,6 @@
 import { formatServerError, formatGraphQLError, parseData, pageInfo } from "@openimis/fe-core";
 import { SERVICES_PRICELIST_TYPE, ITEMS_PRICELIST_TYPE } from "./constants";
+import { normalizePrice } from "./helpers/pricelist";
 
 function arrayToMap(arr) {
   return arr.reduce((map, a) => {
@@ -35,12 +36,14 @@ function reducer(
     pricelists: {
       services: {
         isFetching: false,
+        fetchedPricelist: false,
         items: {},
         item: {},
         error: null,
       },
       items: {
         isFetching: false,
+        fetchedPricelist: false,
         items: {},
         item: {},
         error: null,
@@ -77,11 +80,12 @@ function reducer(
       };
     case "MEDICAL_PRICELIST_SERVICES_RESP":
       const formatService = (service) => {
-        const isActive = service.pricelistDetails?.edges.length > 0 ?? false;
+        const isActive = !!service.pricelistDetails?.edges?.length;
         const d = {
           ...service,
           isActive,
-          priceOverrule: isActive ? service.pricelistDetails.edges[0].node.priceOverrule : undefined,
+          price: normalizePrice(service.price),
+          priceOverrule: isActive ? normalizePrice(service.pricelistDetails.edges[0].node.priceOverrule) : undefined,
         };
         delete d.pricelistDetails;
         return d;
@@ -121,11 +125,12 @@ function reducer(
       };
     case "MEDICAL_PRICELIST_ITEMS_RESP":
       const formatItem = (item) => {
-        const isActive = item.pricelistDetails?.edges.length > 0 ?? false;
+        const isActive = !!item.pricelistDetails?.edges?.length;
         const d = {
           ...item,
           isActive,
-          priceOverrule: isActive ? item.pricelistDetails.edges[0].node.priceOverrule : undefined,
+          price: normalizePrice(item.price),
+          priceOverrule: isActive ? normalizePrice(item.pricelistDetails.edges[0].node.priceOverrule) : undefined,
         };
         delete d.pricelistDetails;
         return d;
@@ -158,11 +163,16 @@ function reducer(
           [action.meta.pricelistType]: {
             ...state.pricelists[action.meta.pricelistType],
             isFetching: true,
+            fetchedPricelist: false,
             error: null,
           },
         },
       };
-    case "MEDICAL_PRICELIST_PRICELIST_RESP":
+    case "MEDICAL_PRICELIST_PRICELIST_RESP": {
+      const payloadField =
+        action.meta.pricelistType === SERVICES_PRICELIST_TYPE ? "servicesPricelists" : "itemsPricelists";
+      const pricelist = parseData(action.payload.data[payloadField])?.[0] ?? null;
+      const cacheKey = pricelist?.uuid ?? action.meta.pricelistUuid;
       return {
         ...state,
         pricelists: {
@@ -170,14 +180,18 @@ function reducer(
           [action.meta.pricelistType]: {
             ...state.pricelists[action.meta.pricelistType],
             isFetching: false,
-            items: {
-              ...state.pricelists[action.meta.pricelistType].items,
-              [action.payload.data.node.id]: action.payload.data.node,
-            },
-            item: action.payload.data.node,
+            fetchedPricelist: true,
+            items: pricelist && cacheKey
+              ? {
+                  ...state.pricelists[action.meta.pricelistType].items,
+                  [cacheKey]: pricelist,
+                }
+              : state.pricelists[action.meta.pricelistType].items,
+            item: pricelist ?? {},
           },
         },
       };
+    }
     case "MEDICAL_PRICELIST_PRICELIST_ERR":
       return {
         ...state,

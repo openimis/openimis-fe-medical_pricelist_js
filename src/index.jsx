@@ -8,9 +8,11 @@ import ServicesPricelistsPage from "./pages/ServicesPricelistsPage";
 import ItemsPricelistsPage from "./pages/ItemsPricelistsPage";
 import ServicesPricelistDetailsPage from "./pages/ServicesPricelistDetailsPage";
 import ItemsPricelistDetailsPage from "./pages/ItemsPricelistDetailsPage";
-import { RIGHT_SERVICES_PRICELISTS, RIGHT_ITEMS_PRICELISTS} from "./constants"
+import { RIGHT_SERVICES_PRICELISTS, RIGHT_ITEMS_PRICELISTS } from "./constants";
 const DEFAULT_CONFIG = {
-  "translations": [{ key: "en", messages: messages_en }, { key: "fr", messages: messages_fr }],
+  "translations": [
+    { key: "en", messages: messages_en },
+  ],
   "reducers": [{ key: "medical_pricelist", reducer }],
   "refs": [
     { key: "medical_pricelist.ServicesPriceListPicker", ref: ServicesPricelistPicker },
@@ -30,34 +32,34 @@ const DEFAULT_CONFIG = {
   ],
   "core.Boot": [PriceListLoader],
   "core.Router": [
-    { 
+    {
       id: "medical_pricelist.servicesPricelist",
       text: "medical_pricelist.servicesPricelist",
       icon: "MedicalServices",
       path: "medical/pricelists/services",
       component: ServicesPricelistsPage,
-      rights: [RIGHT_SERVICES_PRICELISTS]
+      rights: [RIGHT_SERVICES_PRICELISTS],
     },
     { path: "medical/pricelists/services/new", component: ServicesPricelistDetailsPage },
-    { path: "medical/pricelists/services/:price_list_id", component: ServicesPricelistDetailsPage },
-    { 
+    { path: "medical/pricelists/services/:price_list_uuid", component: ServicesPricelistDetailsPage },
+    {
       id: "medical_pricelist.itemsPricelist",
       text: "medical_pricelist.itemsPricelist",
       icon: "Vaccines",
       path: "medical/pricelists/items",
       component: ItemsPricelistsPage,
-      rights: [RIGHT_ITEMS_PRICELISTS]
+      rights: [RIGHT_ITEMS_PRICELISTS],
     },
     { path: "medical/pricelists/items/new", component: ItemsPricelistDetailsPage },
-    { path: "medical/pricelists/items/:price_list_id", component: ItemsPricelistDetailsPage },
+    { path: "medical/pricelists/items/:price_list_uuid", component: ItemsPricelistDetailsPage },
   ],
   "admin.MainMenu": [
     {
-      route:  "medical/pricelists/services",
+      route: "medical/pricelists/services",
     },
     {
-      route:  "medical/pricelists/items",
-      withDivider: true
+      route: "medical/pricelists/items",
+      withDivider: true,
     },
   ],
 };

@@ -13,10 +13,10 @@ import {
 import { FormControlLabel, Grid, Checkbox } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
-const StyledPricelistsFilter = styled('section')(({ theme }) => ({
+const StyledPricelistsFilter = styled("section")(({ theme }) => ({
   padding: "0 0 10px 0",
   width: "100%",
-  '& .item': {
+  "& .item": {
     padding: theme.spacing(1),
   },
 }));

@@ -31,7 +31,14 @@ const ServicesPricelistsPage = (props) => {
   const dispatch = useDispatch();
 
   const onDoubleClick = (row, newTab = false) => {
-    historyPush(modulesManager, history, "medical_pricelist.servicesPricelistDetails", [row.id], newTab);
+    const pathname = `/${modulesManager.getRef("medical_pricelist.servicesPricelistDetails")}/${row.uuid}`;
+    if (newTab) {
+      const link = history.createHref({ pathname, state: { pricelist: row } });
+      const hasDynLink = modulesManager.getConf("fe-core", "useDynPermalinks", false);
+      window.open(hasDynLink ? `/?dyn=${btoa(link)}` : link);
+      return;
+    }
+    history.push({ pathname, state: { pricelist: row } });
   };
 
   const onAdd = () => {
