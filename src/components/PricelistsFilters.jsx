@@ -10,8 +10,14 @@ import {
   GRID_RESPONSIVE_STANDARD,
   GRID_RESPONSIVE_SMALL,
 } from "@openimis/fe-core";
-import { FormControlLabel, Grid, Checkbox } from "@mui/material";
+import { FormControlLabel, Grid, Checkbox, FormHelperText } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { 
+  buildLocationFilter, 
+  shouldDisableRegion, 
+  getRegionHelperText,
+  validateLocationFilters 
+} from "../utils/filtersUtils";
 
 const StyledPricelistsFilter = styled('section')(({ theme }) => ({
   padding: "0 0 10px 0",
@@ -25,20 +31,49 @@ const PricelistsFilter = (props) => {
   const { filters, onChangeFilters, modulesManager } = props;
   const { formatMessage } = useTranslations("medical_pricelist", modulesManager);
 
+  /**
+   * Handle the change of region with priority logic
+   * If a district is selected, the region is ignored
+   */
   const onRegionChange = (value) => {
+    // If a district is already selected, do not allow the region change
+    if (shouldDisableRegion(filters)) {
+      return;
+    }
+    
     onChangeFilters([
       { id: "region", value, filter: value ? `location_Uuid: "${value.uuid}"` : null },
-      { id: "district", value: null, filter: null },
+      { id: "district", value: null, filter: null }, // Reset the district
     ]);
   };
+
+  /**
+   * Handle the change of district with absolute priority
+   * The district always overrides the region
+   */
   const onDistrictChange = (value) => {
-    onChangeFilters([{ id: "district", value, filter: value ? `location_Uuid: "${value.uuid}"` : null }]);
+    const updates = [
+      { id: "district", value, filter: value ? `location_Uuid: "${value.uuid}"` : null }
+    ];
+    
+    // If a district is selected, reset the region
+    if (value && value.uuid) {
+      updates.push({ id: "region", value: null, filter: null });
+    }
+    
+    onChangeFilters(updates);
   };
+
   const onNameChange = (value) => {
     onChangeFilters([{ id: "name", value, filter: `name_Icontains: "${value}"` }]);
   };
 
   const triggerDebounceName = useDebounceCb(onNameChange, modulesManager.getConf("fe-admin", "debounceTime", 500));
+
+  // UX states
+  const isRegionDisabled = shouldDisableRegion(filters);
+  const regionHelperText = getRegionHelperText(filters);
+  const locationValidation = validateLocationFilters(filters);
 
   return (
     <StyledPricelistsFilter>
@@ -68,7 +103,13 @@ const PricelistsFilter = (props) => {
                 value={filters?.region?.value}
                 withNull={true}
                 onChange={onRegionChange}
+                disabled={isRegionDisabled}
               />
+              {regionHelperText && (
+                <FormHelperText style={{ marginTop: 4 }}>
+                  {regionHelperText}
+                </FormHelperText>
+              )}
             </Grid>
           }
         />
@@ -85,6 +126,11 @@ const PricelistsFilter = (props) => {
                 key={filters?.region?.value}
                 onChange={onDistrictChange}
               />
+              {isRegionDisabled && (
+                <FormHelperText style={{ marginTop: 4, color: '#666' }}>
+                  Prioritaire sur la région
+                </FormHelperText>
+              )}
             </Grid>
           }
         />
@@ -138,6 +184,12 @@ const PricelistsFilter = (props) => {
           }
         />
       </Grid>
+      {/* Display validation error if necessary */}
+      {!locationValidation.isValid && (
+        <Grid item xs={12} style={{ color: 'red', marginTop: 8 }}>
+          {locationValidation.error}
+        </Grid>
+      )}
     </StyledPricelistsFilter>
   );
 };
