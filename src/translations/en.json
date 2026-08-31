@@ -29,6 +29,10 @@
   "medical_pricelist.table.type.p": "Preventative",
   "medical_pricelist.table.type.d": "Drug",
   "medical_pricelist.table.editOverruleButton": "Edit",
+  "medical_pricelist.detailsFilter.code.label": "Code",
+  "medical_pricelist.detailsFilter.code.placeholder": "Filter by code",
+  "medical_pricelist.detailsFilter.name.label": "Name",
+  "medical_pricelist.detailsFilter.name.placeholder": "Filter by name",
   "medical_pricelist.priceOverruleDialog.title": "Override Price",
   "medical_pricelist.priceOverruleDialog.message": "You can override the price of this element for this pricelist",
   "medical_pricelist.priceOverruleDialog.yes.button": "Save",
@@ -51,7 +55,6 @@
   "medical_pricelist.gql_mutation_pricelists_medical_services_update_perms": "Medical Pricelist | Mutation Pricelists Medical Services Update",
   "medical_pricelist.gql_mutation_pricelists_medical_services_delete_perms": "Medical Pricelist | Mutation Pricelists Medical Services Delete",
   "medical_pricelist.gql_mutation_pricelists_medical_services_duplicate_perms": "Medical Pricelist | Mutation Pricelists Medical Services Duplicate",
-  "medical_pricelist.table.medicalItemName": "Product Name", 
-  "medical_pricelist.table.medicalServiceName": "Service Name"    
-
+  "medical_pricelist.table.medicalItemName": "Product Name",
+  "medical_pricelist.table.medicalServiceName": "Service Name"
 }

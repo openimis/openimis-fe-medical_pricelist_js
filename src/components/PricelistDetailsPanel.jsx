@@ -1,19 +1,35 @@
 import React, { useState, useEffect } from "react";
 import { styled } from "@mui/material/styles";
-import { Table, withModulesManager, combine, useTranslations, ErrorBoundary } from "@openimis/fe-core";
-import { Paper, Grid, Typography, Checkbox, Button} from "@mui/material";
+import {
+  Table,
+  withModulesManager,
+  combine,
+  useTranslations,
+  ErrorBoundary,
+  ControlledField,
+  TextInput,
+} from "@openimis/fe-core";
+import { Paper, Grid, Typography, Checkbox, Button } from "@mui/material";
 import PriceOverruleDialog from "./PriceOverruleDialog";
-import SelectAllButton from "./PricelistSelectAllButton" 
+import SelectAllButton from "./PricelistSelectAllButton";
 
-const StyledPricelistDetailsPanel = styled('div')(({ theme }) => ({
-  '& .paper': theme.paper?.paper ?? {},
-  '& .item': theme.paper?.item ?? {},
-  '& .tableTitle': theme.table?.title ?? {},
-  '& .checkbox': {
+const StyledPricelistDetailsPanel = styled("div")(({ theme }) => ({
+  "& .paper": theme.paper?.paper ?? {},
+  "& .item": theme.paper?.item ?? {},
+  "& .tableTitle": theme.table?.title ?? {},
+  "& .checkbox": {
     padding: theme.spacing(0),
   },
-  '& .editDetailBtn': {
+  "& .editDetailBtn": {
     padding: 0,
+  },
+  "& .filtersContainer": {
+    padding: theme.spacing(2),
+    paddingBottom: 0,
+    alignItems: "center",
+  },
+  "& .filterField": {
+    maxWidth: 400,
   },
 }));
 
@@ -32,38 +48,61 @@ const isItemActive = (edited, item) => {
 };
 
 const PricelistDetailsPanel = (props) => {
-  const {
-    modulesManager,
-    pageSize = 20,
-    edited,
-    edited_id,
-    readOnly,
-    details,
-    fetchDetails,
-    onEditedChanged,
-  } = props;
+  const { modulesManager, pageSize = 20, edited, edited_id, readOnly, details, fetchDetails, onEditedChanged } = props;
   const { formatMessage } = useTranslations("medical_pricelist", modulesManager);
   const [pagination, setPagination] = useState({ page: 0, afterCursor: null, beforeCursor: null });
   const [editedDetail, setEditedDetail] = useState(null);
-  
-  const ButtonHeader = (_) => {
-    return SelectAllButton(details, props, edited, onEditedChanged)
-  }
+  const [filters, setFilters] = useState({ code: "", name: "" });
+  // Debounced filter values
+  const [debouncedFilters, setDebouncedFilters] = useState({ code: "", name: "" });
 
-  HEADERS[0] = ButtonHeader
+  const ButtonHeader = (_) => {
+    return SelectAllButton(details, props, edited, onEditedChanged);
+  };
+
+  HEADERS[0] = ButtonHeader;
+
+  // Debounce logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFilters({
+        code: filters.code.trim(),
+        name: filters.name.trim(),
+      });
+    }, modulesManager.getConf("fe-admin", "debounceTime", 500));
+
+    return () => clearTimeout(timer);
+  }, [filters.code, filters.name]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setPagination({ page: 0, afterCursor: null, beforeCursor: null });
+  }, [debouncedFilters]);
 
   useEffect(() => {
-    const filters = [];
+    const filterParams = [];
+
+    // Add pagination parameters
     if (pagination.afterCursor) {
-      filters.push(`first: ${pageSize}`, `after: "${pagination.afterCursor}"`);
+      filterParams.push(`first: ${pageSize}`, `after: "${pagination.afterCursor}"`);
     } else if (pagination.beforeCursor) {
-      filters.push(`last: ${pageSize}`, `before: "${pagination.beforeCursor}"`);
+      filterParams.push(`last: ${pageSize}`, `before: "${pagination.beforeCursor}"`);
     } else {
-      filters.push(`first: ${pageSize}`);
+      filterParams.push(`first: ${pageSize}`);
     }
 
-    fetchDetails(filters);
-  }, [pagination.page, edited_id]);
+    // Add code filter if present
+    if (debouncedFilters.code) {
+      filterParams.push(`code_Icontains: "${debouncedFilters.code}"`);
+    }
+
+    // Add name filter if present
+    if (debouncedFilters.name) {
+      filterParams.push(`name_Icontains: "${debouncedFilters.name}"`);
+    }
+
+    fetchDetails(filterParams);
+  }, [pagination.page, edited_id, debouncedFilters]);
 
   const onDetailChange = (event, item) => {
     if (event.target.checked) {
@@ -94,6 +133,13 @@ const PricelistDetailsPanel = (props) => {
     setEditedDetail(null);
   };
 
+  const handleFilterChange = (field) => (value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   return (
     <StyledPricelistDetailsPanel>
       {editedDetail && (
@@ -118,6 +164,43 @@ const PricelistDetailsPanel = (props) => {
             </Grid>
           </Grid>
           <Grid container>
+            {/* Filters - same line */}
+            <Grid size={12}>
+              <Grid container spacing={2} className="filtersContainer">
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} className="filterField">
+                  <ControlledField
+                    module="medical_pricelist"
+                    id="medicalPricelistsFilter.details.code"
+                    field={
+                      <TextInput
+                        module="medical_pricelist"
+                        name="code"
+                        label={formatMessage("medical_pricelist.detailsFilter.code.label")}
+                        value={filters.code}
+                        onChange={handleFilterChange("code")}
+                        placeholder={formatMessage("medical_pricelist.detailsFilter.code.placeholder")}
+                      />
+                    }
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} className="filterField">
+                  <ControlledField
+                    module="medical_pricelist"
+                    id="medicalPricelistsFilter.details.name"
+                    field={
+                      <TextInput
+                        module="medical_pricelist"
+                        name="name"
+                        label={formatMessage("medical_pricelist.detailsFilter.name.label")}
+                        value={filters.name}
+                        onChange={handleFilterChange("name")}
+                        placeholder={formatMessage("medical_pricelist.detailsFilter.name.placeholder")}
+                      />
+                    }
+                  />
+                </Grid>
+              </Grid>
+            </Grid>
             <Grid size={12} className="item">
               <Table
                 error={details.error}
