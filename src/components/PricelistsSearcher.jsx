@@ -8,6 +8,7 @@ const DeleteIcon = GetIconComponent("Delete");
 
 import { combine, useTranslations, ConfirmDialog, Searcher, withModulesManager } from "@openimis/fe-core";
 import PricelistsFilters from "./PricelistsFilters";
+import { buildServicesPricelistFilters, buildPaginationParams } from "../utils/filtersUtils";
 
 const isRowDisabled = (_, row) => Boolean(row.validityTo);
 const isRowLocked = () => false;
@@ -88,21 +89,10 @@ const PricelistsSearcher = (props) => {
   }, []);
 
   const filtersToQueryParams = useCallback((state) => {
-    const params = Object.keys(state.filters)
-      .filter((contrib) => !!state.filters[contrib].filter)
-      .map((contrib) => state.filters[contrib].filter);
-    if (!state.beforeCursor && !state.afterCursor) {
-      params.push(`first: ${state.pageSize}`);
-    }
-    if (state.afterCursor) {
-      params.push(`after: "${state.afterCursor}"`);
-      params.push(`first: ${state.pageSize}`);
-    }
-    if (state.beforeCursor) {
-      params.push(`before: "${state.beforeCursor}"`);
-      params.push(`last: ${state.pageSize}`);
-    }
-    return params;
+    const locationFilters = buildServicesPricelistFilters(state);
+    const paginationParams = buildPaginationParams(state);
+    
+    return [...locationFilters, ...paginationParams];
   }, []);
 
   return (
