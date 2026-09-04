@@ -1,14 +1,15 @@
 import {
   graphql,
   formatQuery,
-  formatNodeQuery,
   formatPageQueryWithCount,
   formatPageQuery,
   decodeId,
+  formatGQLString,
   graphqlMutation,
   graphqlWithVariables,
 } from "@openimis/fe-core";
 import { ITEMS_PRICELIST_TYPE, SERVICES_PRICELIST_TYPE } from "./constants";
+import { normalizePrice } from "./helpers/pricelist";
 
 export function fetchPriceLists(servicesPricelist, itemsPricelist) {
   let filters = [];
@@ -32,7 +33,7 @@ export function fetchPriceLists(servicesPricelist, itemsPricelist) {
   });
 }
 
-const PRICELIST_BY_ID_PROJECTIONS = [
+const PRICELIST_PROJECTIONS = [
   "id",
   "uuid",
   "name",
@@ -43,14 +44,22 @@ const PRICELIST_BY_ID_PROJECTIONS = [
   "location{id,name,uuid,code,type,parent{id,uuid,code,name,type}}",
 ];
 
-export function fetchServicesPricelistById(mm, pricelistId) {
-  const query = formatNodeQuery("ServicesPricelistGQLType", pricelistId, PRICELIST_BY_ID_PROJECTIONS);
-  return graphql(query, "MEDICAL_PRICELIST_PRICELIST", { pricelistType: SERVICES_PRICELIST_TYPE });
+export function fetchServicesPricelistByUuid(mm, pricelistUuid) {
+  const query = formatPageQuery(
+    "servicesPricelists",
+    [`uuid: "${formatGQLString(pricelistUuid)}"`],
+    PRICELIST_PROJECTIONS
+  );
+  return graphql(query, "MEDICAL_PRICELIST_PRICELIST", { pricelistType: SERVICES_PRICELIST_TYPE, pricelistUuid });
 }
 
-export function fetchItemsPricelistById(mm, pricelistId) {
-  const query = formatNodeQuery("ItemsPricelistGQLType", pricelistId, PRICELIST_BY_ID_PROJECTIONS);
-  return graphql(query, "MEDICAL_PRICELIST_PRICELIST", { pricelistType: ITEMS_PRICELIST_TYPE });
+export function fetchItemsPricelistByUuid(mm, pricelistUuid) {
+  const query = formatPageQuery(
+    "itemsPricelists",
+    [`uuid: "${formatGQLString(pricelistUuid)}"`],
+    PRICELIST_PROJECTIONS
+  );
+  return graphql(query, "MEDICAL_PRICELIST_PRICELIST", { pricelistType: ITEMS_PRICELIST_TYPE, pricelistUuid });
 }
 
 export function fetchServicesPriceLists(location) {
@@ -133,7 +142,10 @@ function prepareInput(pricelist) {
     addedDetails: pricelist.addedDetails,
     removedDetails: pricelist.removedDetails,
     priceOverrules: pricelist.priceOverrules
-      ? Object.entries(pricelist.priceOverrules).map(([uuid, price]) => ({ uuid, price }))
+      ? Object.entries(pricelist.priceOverrules).map(([uuid, price]) => ({
+          uuid,
+          price: normalizePrice(price),
+        }))
       : undefined,
   };
 }
@@ -239,7 +251,7 @@ export function medicalServicesValidationCheck(mm, variables) {
     }
     `,
     variables,
-    `PRICELIST_SERVICES_FIELDS_VALIDATION`,
+    `PRICELIST_SERVICES_FIELDS_VALIDATION`
   );
 }
 
@@ -263,7 +275,7 @@ export function medicalItemsValidationCheck(mm, variables) {
     }
     `,
     variables,
-    `PRICELIST_ITEMS_FIELDS_VALIDATION`,
+    `PRICELIST_ITEMS_FIELDS_VALIDATION`
   );
 }
 

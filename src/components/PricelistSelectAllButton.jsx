@@ -1,50 +1,58 @@
 import React from "react";
-import { formatMessage } from "@openimis/fe-core";
-import { Button, Box } from "@mui/material";
+import { useTranslations } from "@openimis/fe-core";
+import { Button } from "@mui/material";
+import { isItemActive } from "../helpers/selection";
 
-export function SelectAllButton (details, props, edited, onEditedChanged) {
+const PricelistSelectAllButton = ({ details, readOnly, edited, onEditedChanged, modulesManager }) => {
+  const { formatMessage } = useTranslations("medical_pricelist", modulesManager);
 
-    const page_details_uuids = details.items ? details.items.map(d => d.uuid) : []
-    const current_added_details = edited.addedDetails? edited.addedDetails : []
-    const areNotAllSelected = !current_added_details.includes(...page_details_uuids)
-    const current_removed_details = edited.removedDetails? edited.removedDetails : []
+  const pageItems = details?.items ?? [];
+  const pageUuids = pageItems.map((item) => item.uuid);
 
+  const allSelected = pageItems.length > 0 && pageItems.every((item) => isItemActive(edited, item));
 
-    if (areNotAllSelected) {
-        page_details_uuids.push(...current_removed_details)    
+  const handleTogglePage = () => {
+    const added = edited?.addedDetails ?? [];
+    const removed = edited?.removedDetails ?? [];
+
+    if (allSelected) {
+      // Unselect all items on this page
+      const newAdded = added.filter((uuid) => !pageUuids.includes(uuid));
+      const toRemove = pageItems.filter((item) => item.isActive).map((item) => item.uuid);
+      const newRemoved = [...new Set([...removed, ...toRemove])];
+
+      onEditedChanged({
+        ...edited,
+        addedDetails: newAdded,
+        removedDetails: newRemoved,
+      });
     } else {
-        page_details_uuids.push(...current_added_details)    
-    }
+      // Select all items on this page
+      const toAdd = pageItems.filter((item) => !item.isActive).map((item) => item.uuid);
+      const newAdded = [...new Set([...added, ...toAdd])];
+      const newRemoved = removed.filter((uuid) => !pageUuids.includes(uuid));
 
-    const new_details_uuids = [...new Set(page_details_uuids)]
-    //details.items.length > (!!edited.addedDetails? edited.addedDetails.length : 0)
-  
-    const selectAllEdited = () => {
-      try {
-        const addedDetails = areNotAllSelected ? new_details_uuids : current_removed_details;
-        const removedDetails = areNotAllSelected ? current_removed_details : new_details_uuids;
-        onEditedChanged({
-          ...edited,
-          addedDetails,
-          removedDetails
-        })
-      } catch (error) {
-        console.error(error);
-      }
+      onEditedChanged({
+        ...edited,
+        addedDetails: newAdded,
+        removedDetails: newRemoved,
+      });
     }
-    
-    return (
-          <Box flexGrow={1}>
-          <Box display="flex" justifyContent="flex-end">
-          <Button onClick={() => selectAllEdited()} color="primary" disabled={props.readOnly} fullWidth>
-        {areNotAllSelected ? 
-          formatMessage(props.intl, "medical_pricelist","medical_pricelist.table.selectAll") : 
-          formatMessage(props.intl, "medical_pricelist","medical_pricelist.table.unselectAll")
-        }
-      </Button>
-          </Box>
-        </Box>
-    );
-  }
+  };
 
-export default SelectAllButton;
+  return (
+    <Button
+      onClick={handleTogglePage}
+      color="primary"
+      disabled={readOnly || pageItems.length === 0}
+      size="small"
+      className="selectAllBtn"
+    >
+      {allSelected
+        ? formatMessage("medical_pricelist.table.unselectAll")
+        : formatMessage("medical_pricelist.table.selectAll")}
+    </Button>
+  );
+};
+
+export default PricelistSelectAllButton;

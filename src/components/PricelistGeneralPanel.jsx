@@ -3,7 +3,6 @@ import { connect } from "react-redux";
 
 import { styled } from "@mui/material/styles";
 import { Grid } from "@mui/material";
-import _debounce from "lodash/debounce";
 
 import {
   FormPanel,
@@ -11,57 +10,55 @@ import {
   withModulesManager,
   PublishedComponent,
   ValidatedTextInput,
-  TextInput,
-  useDebounceCb,
   GRID_RESPONSIVE_STANDARD,
 } from "@openimis/fe-core";
-import {
-  medicalServicesValidationCheck,
-  medicalServicesValidationClear,
-  medicalServicesSetValid,
-  medicalItemsValidationCheck,
-  medicalItemsValidationClear,
-  medicalItemsSetValid,
-} from "../actions";
-import { SERVICES_PRICELIST_TYPE } from "../constants";
+import * as pricelistActions from "../actions";
+import { SERVICES_PRICELIST_TYPE, ITEMS_PRICELIST_TYPE } from "../constants";
+
+const PRICELIST_VALIDATION_ACTIONS = {
+  [SERVICES_PRICELIST_TYPE]: {
+    check: pricelistActions.medicalServicesValidationCheck,
+    clear: pricelistActions.medicalServicesValidationClear,
+    setValid: pricelistActions.medicalServicesSetValid,
+  },
+  [ITEMS_PRICELIST_TYPE]: {
+    check: pricelistActions.medicalItemsValidationCheck,
+    clear: pricelistActions.medicalItemsValidationClear,
+    setValid: pricelistActions.medicalItemsSetValid,
+  },
+};
 
 const StyledPricelistGeneralPanel = styled("div")(({ theme }) => ({
   "& .item": theme.paper?.item ?? {},
 }));
 
 class PricelistGeneralPanel extends FormPanel {
-  constructor(props) {
-    super(props);
-    const debounceTime = props.modulesManager.getConf("fe-medical_pricelist", "debounceTime", 500);
-    this.triggerDebounceName = _debounce(this.onNameChange, debounceTime);
-    this.triggerDebounceCode = _debounce(this.onCodeChange, debounceTime);
-  }
   onRegionChange = (value) => {
     this.updateAttribute("location", value);
   };
 
   onDistrictChange = (value) => {
-    this.updateAttribute("location", value ?? this.props.edited.location?.parent);
+    this.updateAttribute("location", value ?? this.props.edited?.location?.parent);
   };
 
   shouldValidate = (inputValue) => {
-    const { savedServiceName, savedItemName } = this.props;
-    const shouldValidate = inputValue !== (savedServiceName || savedItemName);
-    return shouldValidate;
-  };
-  onCodeChange = (value) => {
-    let filters = [`code_Icontains: "${value}"`, `first: 20`];
-    this.props.fetchDetails(filters);
-  };
-  onNameChange = (value) => {
-    let filters = [`name_Icontains: "${value}"`, `first: 20`];
-    this.props.fetchDetails(filters);
+    const { originalName, savedServiceName, savedItemName, edited } = this.props;
+    const baselineName = originalName || savedServiceName || savedItemName;
+
+    if (!edited?.uuid) {
+      return true;
+    }
+
+    if (!baselineName) {
+      return false;
+    }
+
+    return inputValue !== baselineName;
   };
 
   render() {
     const {
       readOnly,
-      edited,
       isMedicalServiceValid,
       isMedicalServiceValidating,
       medicalServiceValidationError,
@@ -69,22 +66,30 @@ class PricelistGeneralPanel extends FormPanel {
       isMedicalItemValidating,
       medicalItemValidationError,
       activeType,
+      pricelistType,
+      originalName,
     } = this.props;
+    const edited = this.props.edited ?? {};
     const region = edited.location?.parent ?? edited.location;
     const district = edited.location?.parent ? edited.location : null;
-    const servicesOrItems = activeType === SERVICES_PRICELIST_TYPE;
+    const resolvedType = pricelistType || activeType;
+    const validationActions =
+      PRICELIST_VALIDATION_ACTIONS[resolvedType] ?? PRICELIST_VALIDATION_ACTIONS[SERVICES_PRICELIST_TYPE];
+    const isServicesPricelist = resolvedType === SERVICES_PRICELIST_TYPE;
+    const validationKey = `${edited?.uuid || "new"}-${originalName || "pending"}-${resolvedType || "unknown"}`;
     return (
       <StyledPricelistGeneralPanel>
         <Grid container>
           <Grid size={GRID_RESPONSIVE_STANDARD} className="item">
             <ValidatedTextInput
-              action={servicesOrItems ? medicalServicesValidationCheck : medicalItemsValidationCheck}
-              clearAction={servicesOrItems ? medicalServicesValidationClear : medicalItemsValidationClear}
-              setValidAction={servicesOrItems ? medicalServicesSetValid : medicalItemsSetValid}
-              itemQueryIdentifier={servicesOrItems ? "servicesPricelistName" : "itemsPricelistName"}
-              isValid={servicesOrItems ? isMedicalServiceValid : isMedicalItemValid}
-              isValidating={servicesOrItems ? isMedicalServiceValidating : isMedicalItemValidating}
-              validationError={servicesOrItems ? medicalServiceValidationError : medicalItemValidationError}
+              key={validationKey}
+              action={validationActions.check}
+              clearAction={validationActions.clear}
+              setValidAction={validationActions.setValid}
+              itemQueryIdentifier={isServicesPricelist ? "servicesPricelistName" : "itemsPricelistName"}
+              isValid={isServicesPricelist ? isMedicalServiceValid : isMedicalItemValid}
+              isValidating={isServicesPricelist ? isMedicalServiceValidating : isMedicalItemValidating}
+              validationError={isServicesPricelist ? medicalServiceValidationError : medicalItemValidationError}
               shouldValidate={this.shouldValidate}
               module="medical_pricelist"
               label="medical_pricelist.name"
@@ -102,27 +107,6 @@ class PricelistGeneralPanel extends FormPanel {
               readOnly={readOnly}
               withNull={false}
               onChange={this.onRegionChange}
-            />
-          </Grid>
-          <Grid className="item" xs={GRID_RESPONSIVE_STANDARD}>
-            <TextInput
-              module="medical"
-              label={`medical_pricelist.table.code`}
-              value={edited.code}
-              onChange={this.triggerDebounceCode}
-            />
-          </Grid>
-          <Grid className="item" xs={GRID_RESPONSIVE_STANDARD}>
-            <TextInput
-              module="medical_pricelist"
-              label={
-                !!this.props.activeType && this.props.activeType === "items"
-                  ? `medical_pricelist.table.medicalItemName`
-                  : `medical_pricelist.table.medicalServiceName`
-              }
-              value={edited?.serviceOrItemName ?? ""}
-              onChange={this.triggerDebounceName}
-              readOnly={readOnly}
             />
           </Grid>
           <Grid size={GRID_RESPONSIVE_STANDARD} className="item">
@@ -152,17 +136,41 @@ class PricelistGeneralPanel extends FormPanel {
   }
 }
 
-const mapStateToProps = (state) => ({
-  isMedicalServiceValid: state.medical_pricelist.validationFields?.medicalServices?.isValid,
-  isMedicalServiceValidating: state.medical_pricelist.validationFields?.medicalServices?.isValidating,
-  medicalServiceValidationError: state.medical_pricelist.validationFields?.medicalServices?.validationError,
-  savedServiceName: state.medical_pricelist?.pricelists?.services.item?.name,
-  isMedicalItemValid: state.medical_pricelist.validationFields?.medicalItems?.isValid,
-  isMedicalItemValidating: state.medical_pricelist.validationFields?.medicalItems?.isValidating,
-  medicalItemValidationError: state.medical_pricelist.validationFields?.medicalItems?.validationError,
-  savedItemName: state.medical_pricelist?.pricelists?.items.item?.name,
-  activeType: state.medical_pricelist?.services?.type || state.medical_pricelist?.items?.type,
-});
+const mapStateToProps = (state, props) => {
+  const editedUuid = props?.edited?.uuid;
+  const servicesState = state.medical_pricelist?.pricelists?.services;
+  const itemsState = state.medical_pricelist?.pricelists?.items;
+
+  return {
+    isMedicalServiceValid: state.medical_pricelist.validationFields?.medicalServices?.isValid,
+    isMedicalServiceValidating: state.medical_pricelist.validationFields?.medicalServices?.isValidating,
+    medicalServiceValidationError: state.medical_pricelist.validationFields?.medicalServices?.validationError,
+    savedServiceName:
+      servicesState?.item?.uuid === editedUuid
+        ? servicesState.item.name
+        : editedUuid
+          ? servicesState?.items?.[editedUuid]?.name
+          : undefined,
+    isMedicalItemValid: state.medical_pricelist.validationFields?.medicalItems?.isValid,
+    isMedicalItemValidating: state.medical_pricelist.validationFields?.medicalItems?.isValidating,
+    medicalItemValidationError: state.medical_pricelist.validationFields?.medicalItems?.validationError,
+    savedItemName:
+      itemsState?.item?.uuid === editedUuid
+        ? itemsState.item.name
+        : editedUuid
+          ? itemsState?.items?.[editedUuid]?.name
+          : undefined,
+    activeType: state.medical_pricelist?.services?.type || state.medical_pricelist?.items?.type,
+    pricelistType: props?.pricelistType,
+    originalName: props?.originalName,
+  };
+};
+
+const ConnectedPricelistGeneralPanel = withHistory(
+  withModulesManager(connect(mapStateToProps)(PricelistGeneralPanel))
+);
 
 export { StyledPricelistGeneralPanel };
-export default withHistory(withModulesManager(connect(mapStateToProps)(PricelistGeneralPanel)));
+export default function PricelistGeneralHeadPanel(props) {
+  return <ConnectedPricelistGeneralPanel {...props} />;
+}

@@ -19,10 +19,10 @@ import {
   validateLocationFilters 
 } from "../utils/filtersUtils";
 
-const StyledPricelistsFilter = styled('section')(({ theme }) => ({
+const StyledPricelistsFilter = styled("section")(({ theme }) => ({
   padding: "0 0 10px 0",
   width: "100%",
-  '& .item': {
+  "& .item": {
     padding: theme.spacing(1),
   },
 }));

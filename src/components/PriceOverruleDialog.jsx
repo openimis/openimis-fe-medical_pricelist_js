@@ -1,16 +1,27 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { styled } from "@mui/material/styles";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
-import { combine, FormattedMessage, NumberInput } from "@openimis/fe-core";
+import { combine, FormattedMessage, AmountInput } from "@openimis/fe-core";
 
-const StyledPriceOverruleDialog = styled('div')(({ theme }) => ({
-  '& .primaryButton': theme.dialog?.primaryButton ?? {},
-  '& .secondaryButton': theme.dialog?.secondaryButton ?? {},
+const parsePriceValue = (price) => {
+  if (price == null || price === "") return null;
+  const num = Number(price);
+  return Number.isNaN(num) ? null : num;
+};
+
+const StyledPriceOverruleDialog = styled("div")(({ theme }) => ({
+  "& .primaryButton": theme.dialog?.primaryButton ?? {},
+  "& .secondaryButton": theme.dialog?.secondaryButton ?? {},
 }));
 
 const PriceOverruleDialog = (props) => {
   const { open, onCancel, defaultPrice, onConfirm } = props;
-  const [value, setValue] = useState(defaultPrice);
+  const [value, setValue] = useState(() => parsePriceValue(defaultPrice));
+
+  useEffect(() => {
+    setValue(parsePriceValue(defaultPrice));
+  }, [defaultPrice]);
+
   return (
     <StyledPriceOverruleDialog>
       <Dialog open={open} onClose={onCancel}>
@@ -21,7 +32,7 @@ const PriceOverruleDialog = (props) => {
           <DialogContentText>
             <FormattedMessage module="medical_pricelist" id="priceOverruleDialog.message" />
           </DialogContentText>
-          <NumberInput
+          <AmountInput
             autoFocus
             margin="dense"
             id="price"
@@ -37,7 +48,7 @@ const PriceOverruleDialog = (props) => {
           <Button onClick={(e) => onConfirm(value)} className="primaryButton" autoFocus>
             <FormattedMessage module="medical_pricelist" id="priceOverruleDialog.yes.button" />
           </Button>
-          <Button onClick={(e) => onConfirm(null)} className="secondaryButton" autoFocus>
+          <Button onClick={(e) => onConfirm(null)} className="secondaryButton">
             <FormattedMessage module="medical_pricelist" id="priceOverruleDialog.clear.button" />
           </Button>
           <Button onClick={onCancel} className="secondaryButton">
