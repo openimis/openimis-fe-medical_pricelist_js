@@ -3,7 +3,6 @@ import { connect } from "react-redux";
 
 import { styled } from "@mui/material/styles";
 import { Grid } from "@mui/material";
-import _debounce from "lodash/debounce";
 
 import {
   FormPanel,
@@ -11,8 +10,6 @@ import {
   withModulesManager,
   PublishedComponent,
   ValidatedTextInput,
-  TextInput,
-  useDebounceCb,
   GRID_RESPONSIVE_STANDARD,
 } from "@openimis/fe-core";
 import * as pricelistActions from "../actions";
@@ -36,18 +33,12 @@ const StyledPricelistGeneralPanel = styled("div")(({ theme }) => ({
 }));
 
 class PricelistGeneralPanel extends FormPanel {
-  constructor(props) {
-    super(props);
-    const debounceTime = props.modulesManager.getConf("fe-medical_pricelist", "debounceTime", 500);
-    this.triggerDebounceName = _debounce(this.onNameChange, debounceTime);
-    this.triggerDebounceCode = _debounce(this.onCodeChange, debounceTime);
-  }
   onRegionChange = (value) => {
     this.updateAttribute("location", value);
   };
 
   onDistrictChange = (value) => {
-    this.updateAttribute("location", value ?? this.props.edited.location?.parent);
+    this.updateAttribute("location", value ?? this.props.edited?.location?.parent);
   };
 
   shouldValidate = (inputValue) => {
@@ -64,19 +55,10 @@ class PricelistGeneralPanel extends FormPanel {
 
     return inputValue !== baselineName;
   };
-  onCodeChange = (value) => {
-    let filters = [`code_Icontains: "${value}"`, `first: 20`];
-    this.props.fetchDetails(filters);
-  };
-  onNameChange = (value) => {
-    let filters = [`name_Icontains: "${value}"`, `first: 20`];
-    this.props.fetchDetails(filters);
-  };
 
   render() {
     const {
       readOnly,
-      edited,
       isMedicalServiceValid,
       isMedicalServiceValidating,
       medicalServiceValidationError,
@@ -87,6 +69,7 @@ class PricelistGeneralPanel extends FormPanel {
       pricelistType,
       originalName,
     } = this.props;
+    const edited = this.props.edited ?? {};
     const region = edited.location?.parent ?? edited.location;
     const district = edited.location?.parent ? edited.location : null;
     const resolvedType = pricelistType || activeType;
@@ -124,27 +107,6 @@ class PricelistGeneralPanel extends FormPanel {
               readOnly={readOnly}
               withNull={false}
               onChange={this.onRegionChange}
-            />
-          </Grid>
-          <Grid className="item" xs={GRID_RESPONSIVE_STANDARD}>
-            <TextInput
-              module="medical"
-              label={`medical_pricelist.table.code`}
-              value={edited.code}
-              onChange={this.triggerDebounceCode}
-            />
-          </Grid>
-          <Grid className="item" xs={GRID_RESPONSIVE_STANDARD}>
-            <TextInput
-              module="medical_pricelist"
-              label={
-                resolvedType === ITEMS_PRICELIST_TYPE
-                  ? `medical_pricelist.table.medicalItemName`
-                  : `medical_pricelist.table.medicalServiceName`
-              }
-              value={edited?.serviceOrItemName ?? ""}
-              onChange={this.triggerDebounceName}
-              readOnly={readOnly}
             />
           </Grid>
           <Grid size={GRID_RESPONSIVE_STANDARD} className="item">
@@ -204,5 +166,11 @@ const mapStateToProps = (state, props) => {
   };
 };
 
+const ConnectedPricelistGeneralPanel = withHistory(
+  withModulesManager(connect(mapStateToProps)(PricelistGeneralPanel))
+);
+
 export { StyledPricelistGeneralPanel };
-export default withHistory(withModulesManager(connect(mapStateToProps)(PricelistGeneralPanel)));
+export default function PricelistGeneralHeadPanel(props) {
+  return <ConnectedPricelistGeneralPanel {...props} />;
+}

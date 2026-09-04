@@ -13,6 +13,7 @@ import { Paper, Grid, Typography, Checkbox, Button } from "@mui/material";
 import PriceOverruleDialog from "./PriceOverruleDialog";
 import SelectAllButton from "./PricelistSelectAllButton";
 import { isItemActive } from "../helpers/selection";
+import { ITEMS_PRICELIST_TYPE, SERVICES_PRICELIST_TYPE } from "../constants";
 
 const StyledPricelistDetailsPanel = styled("div")(({ theme }) => ({
   "& .paper": theme.paper?.paper ?? {},
@@ -65,6 +66,7 @@ const PricelistDetailsPanel = (props) => {
     fetchDetails,
     onEditedChanged,
     detailsRefreshKey = 0,
+    pricelistType,
   } = props;
   const { formatMessage, formatAmount } = useTranslations("medical_pricelist", modulesManager);
 
@@ -230,7 +232,13 @@ const PricelistDetailsPanel = (props) => {
                       <TextInput
                         module="medical_pricelist"
                         name="name"
-                        label={formatMessage("medical_pricelist.detailsFilter.name.label")}
+                        label={formatMessage(
+                          pricelistType === ITEMS_PRICELIST_TYPE
+                            ? "medical_pricelist.table.medicalItemName"
+                            : pricelistType === SERVICES_PRICELIST_TYPE
+                              ? "medical_pricelist.table.medicalServiceName"
+                              : "medical_pricelist.detailsFilter.name.label"
+                        )}
                         value={filters.name}
                         onChange={handleFilterChange("name")}
                         placeholder={formatMessage("medical_pricelist.detailsFilter.name.placeholder")}
