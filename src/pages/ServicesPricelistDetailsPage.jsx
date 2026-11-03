@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import clsx from "clsx";
 import { styled } from "@mui/material/styles";
@@ -66,18 +66,30 @@ const ServicesPriceListDetailsPage = (props) => {
     dispatch(fetchServicesPricelistByUuid(modulesManager, pricelistUuid));
   }, [dispatch, modulesManager, pricelistUuid, resetKey]);
 
+  // The form renders at once from the list row, then the fetch by uuid returns:
+  // once the user has edited, a late response must not overwrite their changes.
+  const editedFor = useRef(null);
+  const editKey = `${pricelistUuid}-${resetKey}`;
+
   useEffect(() => {
     if (!pricelistUuid) {
       setPricelist({});
       return;
     }
-    if (location.state?.pricelist?.uuid === pricelistUuid) {
-      setPricelist(location.state.pricelist);
+    if (editedFor.current === editKey) {
+      return;
     }
     if (storedPricelist?.uuid === pricelistUuid) {
       setPricelist(storedPricelist);
+    } else if (location.state?.pricelist?.uuid === pricelistUuid) {
+      setPricelist(location.state.pricelist);
     }
-  }, [pricelistUuid, location.state, storedPricelist]);
+  }, [pricelistUuid, editKey, location.state, storedPricelist]);
+
+  const onChange = (edited) => {
+    editedFor.current = editKey;
+    setPricelist(edited);
+  };
 
   useEffect(() => {
     if (originalName) {
@@ -134,12 +146,12 @@ const ServicesPriceListDetailsPage = (props) => {
         <ProgressOrError progress={pricelistState.isFetching && !isReady} error={pricelistState.error} />
         {isReady && (
           <PricelistForm
-            key={`${resetKey ?? "new"}-${originalName ?? pricelistUuid ?? "pending"}`}
+            key={`${resetKey ?? "new"}-${pricelistUuid ?? "pending"}`}
             readOnly={!rights.includes(RIGHT_SERVICES_PRICELISTS_EDIT) || isLocked}
             pricelist={pricelist}
             pricelistType={SERVICES_PRICELIST_TYPE}
             originalName={originalName}
-            onChange={setPricelist}
+            onChange={onChange}
             onBack={() => historyPush(modulesManager, history, "medical_pricelist.servicesPricelists")}
             onSave={rights.includes(RIGHT_SERVICES_PRICELISTS_EDIT) ? onSave : undefined}
             onReset={onReset}

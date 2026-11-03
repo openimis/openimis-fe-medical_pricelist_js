@@ -164,7 +164,6 @@ const PricelistDetailsPanel = (props) => {
   };
 
   const onPriceChange = (price) => {
-    editedDetail.priceOverrule = price;
     onEditedChanged({
       ...edited,
       priceOverrules: {
