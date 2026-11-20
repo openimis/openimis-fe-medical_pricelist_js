@@ -1,7 +1,6 @@
 import React, { Component } from "react";
-import { injectIntl } from "react-intl";
 import _ from "lodash";
-import { parseData, formatMessage, SelectInput, ProgressOrError } from "@openimis/fe-core";
+import { parseData, formatMessage, SelectInput, ProgressOrError, injectIntl } from "@openimis/fe-core";
 
 class PricelistPicker extends Component {
   state = {

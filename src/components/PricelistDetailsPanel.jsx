@@ -199,7 +199,13 @@ const PricelistDetailsPanel = (props) => {
       )}
       <Grid size={12}>
         <Paper className="paper">
-          <Grid container className="tableTitle" justifyContent="space-between" alignItems="center">
+          <Grid
+            container
+            className="tableTitle"
+            sx={{
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
             <Grid>
               <Typography variant="h6">{formatMessage("pricelistForm.table.title")}</Typography>
             </Grid>
