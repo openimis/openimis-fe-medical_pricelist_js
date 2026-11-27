@@ -26,7 +26,7 @@ import { getInitialOriginalName } from "../helpers/pricelist";
 import { getPricelistUuid } from "../helpers/routing";
 
 const StyledServicesPriceListDetailsPage = styled("div")(({ theme }) => ({
-  ...theme.page ?? {},
+  ...(theme.page ?? {}),
   "&.locked": theme.page?.locked ?? {},
 }));
 

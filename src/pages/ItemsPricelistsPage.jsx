@@ -18,7 +18,7 @@ import { RIGHT_ITEMS_PRICELISTS_DELETE, RIGHT_ITEMS_PRICELISTS_ADD, MODULE_NAME}
 const AddIcon = GetIconComponent("Add")
 
 const StyledItemsPricelistsPage = styled('div')(({ theme }) => ({
-  ...theme.page ?? {},
+  ...(theme.page ?? {}),
   paddingInline: 16,
   '& .fab': theme.fab ?? {},
 }));
