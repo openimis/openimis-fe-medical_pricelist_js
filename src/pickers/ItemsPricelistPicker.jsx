@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import { bindActionCreators } from "redux";
-import { injectIntl } from "react-intl";
+import { injectIntl } from "@openimis/fe-core";
 import { fetchItemsPriceLists } from "../actions";
 import PricelistPicker from "./PricelistPicker";
 
